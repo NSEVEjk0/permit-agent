@@ -8,6 +8,8 @@ This is a focused safety experiment using **AgentTune → observed tool trajecto
 
 ## Inspect the harness
 
+Open the [Permit lab](https://permit-lab.vercel.app). Its [verification run](https://github.com/NSEVEjk0/permit-agent/actions/runs/41946018579) checks the deterministic environment, exact corpus, real AgentTune-to-AuditKIT schema boundary and desktop/mobile interface. Actual gated-model training and evaluation remain separate launch steps.
+
 The public lab presents three **scripted harness examples**: unchanged permission, revoked delivery and narrowed destination scope. They are authored routes executed by the actual fictional gateway. They demonstrate behavior and replayable evidence, not base or trained model scores. No model inference, fine-tuning or before/after improvement has been produced yet.
 
 ```sh
