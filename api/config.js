@@ -1,0 +1,1 @@
+export default function handler(request,response){response.setHeader('Cache-Control','no-store');response.status(200).json({deployment:'preview',modelAvailable:false,trainingRun:false,model:'CohereLabs/tiny-aya-global',corpus:{train:144,dev:48,heldout:72},fixtureMode:'scripted-harness-no-model-no-training'});}

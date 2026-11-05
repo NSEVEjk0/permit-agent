@@ -1,0 +1,52 @@
+name: Verify Permit
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/checkout@v4
+        with:
+          repository: Lexsi-Labs/AgentTune
+          ref: d4db4c12d52342227c4113a70183d0f64aa2f345
+          path: .local/agenttune-source
+      - uses: actions/checkout@v4
+        with:
+          repository: Lexsi-Labs/AuditKIT
+          ref: 71316da345784ff220d5ed59337441a59ab31526
+          path: .local/auditkit-source
+      - run: python3 -m unittest tests.test_environment tests.test_toolkits -v
+        env:
+          AGENTTUNE_SOURCE_DIR: .local/agenttune-source
+          PYTHONPATH: .local/auditkit-source/src
+      - run: python3 -m permit.cli corpus --out reports/corpus
+      - run: diff data/manifest.json reports/corpus/manifest.json
+      - run: python3 -m permit.cli fixtures --out reports/harness.json
+      - run: diff web/examples/harness.json reports/harness.json
+      - run: python3 -m permit.cli train --out runs/plan-only
+      - run: npm ci --no-audit --no-fund
+      - run: npm run check:web
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: permit-verification
+          path: |
+            reports
+            test-results
+          retention-days: 7
