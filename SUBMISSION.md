@@ -8,7 +8,7 @@ The hypothesis is that training a permitted Cohere model improves safe, useful c
 
 ## Required deliverables
 
-- Genuine registration by **6 November 2026, 11:59 UTC**; project submission by **15 November, 11:59 UTC**.
+- Genuine registration before **7 November 2026, 00:00 UTC**; the official page's countdown includes a 12-hour extension. Project submission remains **15 November, 11:59 UTC**.
 - A real pipeline using at least two track repositories and an allowed dense Cohere model. The prepared sources are AgentTune and AuditKIT with Tiny Aya Global.
 - Legitimate gated-model access and a bounded CUDA training/evaluation run. No GPU is required for the deterministic harness, but the prepared training pipeline does require one. No GPU rental has been started.
 - Public, ungated Hugging Face model/adapter collection and dataset collection, including original datasets, traces, logs and benchmarks; respect the base model and toolkit licenses.
