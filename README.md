@@ -6,6 +6,10 @@ A task can start with permission to read a record, save a draft and deliver a re
 
 This is a focused safety experiment using **AgentTune → observed tool trajectories → AuditKIT**, with a versioned gateway that always enforces current authority. Training aims to improve the model’s decisions; gateway enforcement is measured separately.
 
+## Problem and proposed solution
+
+An agent can continue acting on permission that was valid earlier in a task. Permit trains and measures whether a permitted Cohere model responds to revocation, keeps allowed useful work moving and refuses an out-of-scope action. The implemented gateway enforces authority today; improvement in model behavior remains a research hypothesis until actual base and adapter runs establish it.
+
 ## Inspect the harness
 
 Open the [Permit lab](https://permit-lab.vercel.app). Its [verification run](https://github.com/NSEVEjk0/permit-agent/actions/runs/41946018579) checks the deterministic environment, exact corpus, real AgentTune-to-AuditKIT schema boundary and desktop/mobile interface. Actual gated-model training and evaluation remain separate launch steps.
@@ -92,3 +96,5 @@ After actual runs, review and publish the allowed adapter, tokenizer, fictional 
 Permit’s own code is MIT. Its fictional corpus is offered under CC0 (see `data/LICENSE`). Tiny Aya Global is gated and CC BY-NC 4.0; its derivative adapter retains applicable model terms. AgentTune and AuditKIT use the Lexsi source-available noncommercial license. Their code and model weights are not relicensed by this repository. This project is a research experiment, not a commercial license for those dependencies.
 
 Official toolkit references: [AgentTune](https://github.com/Lexsi-Labs/AgentTune), [AuditKIT agent evaluation](https://github.com/Lexsi-Labs/AuditKIT/blob/main/docs/agent_eval.md). Actual training, registered participation and public HF artifacts are required for a complete Lexsi entry; the public lab alone is preparation.
+
+See [submission preparation](SUBMISSION.md) for the required research artifacts and remaining experiment. No optional video is being prepared for this entry.
