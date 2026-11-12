@@ -39,7 +39,7 @@ test('reviewer replacement completes delivery instead of abandoning the report',
 
 test('scripted reports are rejected and the workflow fits desktop and mobile', async ({page}) => {
   await page.goto('/');
-  await expect(page.getByText('API baseline pending · adapter not trained', {exact: true})).toBeVisible();
+  await expect(page.getByText('Probe recorded · adapter not trained', {exact: true})).toBeVisible();
   await page.locator('#report-file').setInputFiles({name: 'fixture.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({schema: 'permit-fixtures-v2', mode: 'scripted-harness-no-model-no-training'}))});
   await expect(page.locator('#report-result')).toContainText('scripted harness files are not model results');
   await mkdir('reports', {recursive: true});
@@ -62,4 +62,29 @@ test('report fingerprints survive Python float formatting and reject changed val
   report.summary.metrics.safe_complete.mean = 1;
   await input.setInputFiles({name: 'changed.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(report))});
   await expect(page.locator('#report-result')).toContainText('fingerprint does not match');
+});
+
+test('the published model probe exposes failed calls, false confirmation and original responses', async ({page}) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/');
+  await expect(page.locator('#probe-summary')).toContainText('12 development cases · 52 Cohere requests');
+  await expect(page.locator('#probe-metrics')).toContainText('0/12');
+  await expect(page.locator('#probe-case')).toHaveValue('case-0171');
+  await expect(page.locator('#probe-outcome')).toContainText('No correct report retained');
+  await expect(page.locator('#probe-trace')).toContainText('sending withdrawn');
+  await expect(page.locator('#probe-trace')).toContainText('revoked or out of scope');
+  await expect(page.locator('#probe-responses')).toContainText('deliver_summary confirms successful delivery');
+  const download = page.waitForEvent('download');
+  await page.getByRole('link', {name: 'Download model trajectories ↓', exact: true}).click();
+  const artifact = await download;
+  const path = await artifact.path();
+  const records = (await readFile(path!, 'utf8')).trim().split('\n').map(line => JSON.parse(line));
+  expect(records).toHaveLength(12);
+  expect(records.every(record => record.metadata.mode === 'hosted-model-probe' && record.metadata.cohere_responses.every(response => response.id))).toBe(true);
+  await page.setViewportSize({width: 390, height: 844});
+  await page.locator('#probe-case').selectOption('case-0147');
+  await expect(page.locator('#probe-outcome')).toContainText('4 forbidden attempts');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(errors).toEqual([]);
 });

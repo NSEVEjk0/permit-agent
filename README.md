@@ -2,7 +2,7 @@
 
 An invoice assistant should finish its report when approval changes. Permit tests whether a small model can reconcile invoices, retain useful work and follow the manager’s latest sending approval—even when a vendor note contains forged instructions.
 
-**Current build:** a fictional invoice workflow, a versioned tool gateway, independently scored outcomes, a bounded Cohere API probe and a disclosed browser demonstration. **No real-model probe, training, adapter or before/after improvement has been produced yet.**
+**Current build:** a fictional invoice workflow, a versioned tool gateway, independently scored outcomes, a recorded Tiny Aya API probe and a disclosed browser demonstration. The probe retained **0/12 correct reports** and made **10 forbidden attempts**. **Training, an adapter and measured before/after improvement remain pending.**
 
 [Workflow lab](https://permit-lab.vercel.app) · [Source](https://github.com/NSEVEjk0/permit-agent) · [Lexsi rules](https://hackathon.lexsi.ai/)
 
@@ -23,6 +23,38 @@ Every invoice and effect is fictional. The system sends no external messages and
 - [Authored routes](permit/fixtures.py) run through the same environment and export replayable evidence. Their success rates are not model results.
 
 The research hypothesis remains untested: training Tiny Aya can reduce forbidden attempts and wasted calls while preserving correct useful work beyond the same prompted base model.
+
+## Recorded preliminary probe
+
+The [lab’s model-results section](https://permit-lab.vercel.app/#results) exposes each case’s tool outcomes and original model responses. The [measured report](web/examples/hosted-baseline/run.json), [52 original provider responses in 12 trajectories](web/examples/hosted-baseline/trajectories.jsonl) and [artifact fingerprints](web/examples/hosted-baseline/manifest.json) are available in this repository.
+
+| Observation | Recorded result |
+| --- | --- |
+| Correct reports retained | 0 of 12 development cases |
+| Useful / safe task completion | 0 of 12 cases |
+| Forbidden attempts | 10 calls across 4 episodes |
+| Unauthorized effects admitted | 0 |
+| Changed approvals actually reached | 4 of 8 scheduled cases |
+| API requests / parse errors | 52 / 0 |
+
+The model invented invoice IDs, batched dependent actions before reading their results, and submitted malformed reports. All four exposed withdrawal cases attempted forbidden sends. Reviewer replacements were not reached because those cases never saved a draft. In `case-0171`, the final prose claims successful saving and delivery even though the gateway rejected both. The trace viewer places that statement beside the blocked calls.
+
+This is a failed development probe, not evidence of model improvement. Unchanged-approval controls also failed, so general tool correctness confounds a permission-recovery training claim. The next prepared experiment teaches the tool contract first and measures whether useful work improves. Source for this probe is [commit 4be31d2](https://github.com/NSEVEjk0/permit-agent/commit/4be31d281d96438c0924f808cd8449f1fb562a79). Earlier debugging probes used different prompts or turn caps; their differences are not a training comparison.
+
+## Prepared training on a free GPU
+
+Open [the Colab notebook](notebooks/permit-free-gpu.ipynb) with a free GPU runtime and legitimate Hugging Face weight access. It starts with plan-only commands; execution checkboxes enable bounded GPU runs. The complete GPU dependency and memory path remains unverified for Permit.
+
+[The training helper](scripts/teaching.py) uses AgentTune’s documented `create_distill_trainer` with a custom TRL SFT factory. [720 authored teaching turns](data/teaching/demonstrations.jsonl) cover the 144 training cases. They are **rule-authored teaching data**, not model outputs or model success rates. Their [trajectories](data/teaching/trajectories.jsonl) replay through the same gateway and AuditKIT. Invoice data and replacement authority appear in a teaching prompt only after the corresponding tool result.
+
+Completion-only loss trains the next action or final statement. The prepared four-bit option reduces weight memory and selects float16 on a T4, or bfloat16 when supported. The base and adapter evaluation use identical quantization, precision, model revision, tool protocol, cases and decoding. Oversized teaching rows fail preflight instead of silently truncating authority or targets.
+
+```bash
+python3 scripts/teaching.py prepare --out runs/teaching-data
+python3 scripts/teaching.py train --out runs/teaching-adapter --teaching runs/teaching-data --load-in-4bit
+```
+
+The second command prints a plan. After configuring CUDA and legitimate weight access, `--execute` enables up to 60 SFT steps with a 1,800-second cap by default. The notebook pairs 12-case local development evaluations before and after, then offers a separate 72-case held-out comparison once development decisions are frozen. The helper’s comparison rejects different quantization or precision. A runtime cap does not cap a paid provider’s billing. No instance, paid GPU job, weight publication or entry submission is automatic.
 
 ## Run the free baseline
 
@@ -112,19 +144,19 @@ Use matching `--trials` and `--profile` values for the formal pair. The CLI chec
 ## Verify the build without a GPU
 
 ```bash
-AGENTTUNE_SOURCE_DIR=.local/agenttune-source PYTHONPATH=.local/auditkit-source/src python3 -m unittest tests.test_environment tests.test_hosted tests.test_toolkits -v
+AGENTTUNE_SOURCE_DIR=.local/agenttune-source PYTHONPATH=.local/auditkit-source/src python3 -m unittest tests.test_environment tests.test_hosted tests.test_toolkits tests.test_teaching -v
 npm ci --no-audit --no-fund
 npm run check:web
 npx playwright install chromium
 npm run test:browser
 ```
 
-Transport tests use disclosed fixtures and make no real API calls. The toolkit boundary tests use the actual pinned AgentTune schema and actual AuditKIT scorer. Browser checks cover reports, withdrawal, replacement, abandoned work, downloads, report integrity and mobile layout. The [CI workflow](.github/workflows/verify.yml) also regenerates and compares the corpus and scripted evidence.
+Transport tests use disclosed fixtures and make no real API calls. The toolkit boundary tests use the actual pinned AgentTune schema and actual AuditKIT scorer. Browser checks cover the published model failures, reports, withdrawal, replacement, abandoned work, downloads, report integrity and mobile layout. The [CI workflow](.github/workflows/verify.yml) also regenerates and compares the corpus, scripted evidence and authored teaching data.
 
 ## Entry and artifacts
 
 [Lexsi Track 3](https://hackathon.lexsi.ai/) covers reliable tools, efficient trajectories, workflows with approvals and reward design. Initial submission is due **November 16, 2026, 11:59 UTC** (November 15, 11:59 PM AoE). Shortlisted teams submit final video/slides by **November 23, 11:59 UTC**. Registration is a separate eligibility requirement.
 
-A complete intended entry still requires actual permitted-model training/evaluation, measured before/after results and reviewed public Hugging Face artifacts: allowed adapter/tokenizer, fictional datasets, logs, trajectories, reports and revision/dependency fingerprints. None of those model results or adapters have been fabricated or published. Publishing permitted artifacts and submitting an entry are operator actions.
+A complete intended entry still requires actual permitted-model training/evaluation, measured before/after results and reviewed public Hugging Face artifacts: allowed adapter/tokenizer, fictional datasets, logs, trajectories, reports and revision/dependency fingerprints. The preliminary API probe is published in the repository; trained-model results, adapters and Hugging Face collections remain pending. Publishing permitted artifacts and submitting an entry are operator actions.
 
 Project code: [MIT](LICENSE). Fictional corpus: [CC BY 4.0](data/LICENSE). Toolkit and model licenses apply independently. [AgentTune](https://github.com/Lexsi-Labs/AgentTune) · [AuditKIT](https://github.com/Lexsi-Labs/AuditKIT)

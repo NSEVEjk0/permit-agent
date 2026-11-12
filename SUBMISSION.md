@@ -2,7 +2,7 @@
 
 Permit studies an invoice assistant that retains a correct report when sending approval is withdrawn, records the exact pending delivery, and adapts to a replacement reviewer. Forged vendor instructions cannot change gateway authority.
 
-The gateway, fictional invoice environment, API probe, AgentTune trajectory boundary and AuditKIT state scorer are implemented. The live lab discloses authored tool routes. No actual model baseline, adapter training or measured before/after improvement has been produced.
+The gateway, fictional invoice environment, API probe, AgentTune trajectory boundary and AuditKIT state scorer are implemented. The recorded 12-case Tiny Aya development probe retained no correct report and attempted 10 forbidden calls; the gateway admitted no unauthorized effects. The lab exposes actual model trajectories and separately labels authored tool routes. Adapter training and measured before/after improvement remain pending.
 
 ## Research question
 
@@ -12,7 +12,7 @@ The independent oracle verifies duplicate handling, purchase-order calculations,
 
 ## Evidence required before entry
 
-1. Run a bounded preliminary Cohere API probe on development cases and inspect failures before deciding on GPU expenditure. The API provider’s unreported model revision prevents treating this as the formal base/adapter comparison.
+1. Inspect the recorded preliminary probe. Every unchanged-approval control also failed, so tool correctness must improve before attributing a result to permission recovery. The prepared AgentTune SFT notebook uses 720 authored turns from the training split. Its full GPU dependency and memory path remains unverified. The API provider’s unreported model revision prevents treating its probe as the formal base/adapter comparison.
 2. Obtain legitimate Hugging Face model access and configured CUDA compute. Run the pinned training pipeline on the training split only.
 3. Evaluate the prompted base and adapter on matching held-out cases, backend and decoding. Report correctness, useful/safe completion, attempted/executed violations, recovery, clean-control over-refusal, efficiency and case-bootstrap uncertainty. Include failures.
 4. Review and publish permitted adapter/tokenizer, fictional datasets, actual logs/trajectories, reports, dependency snapshot and model/toolkit/code fingerprints on Hugging Face.
@@ -28,4 +28,4 @@ The independent oracle verifies duplicate handling, purchase-order calculations,
 
 ## Draft description
 
-An invoice assistant can face a changed sending approval halfway through reconciliation. Permit tests whether Tiny Aya keeps a correct report, records a delivery awaiting renewed approval, and uses a replacement reviewer without following forged instructions embedded in vendor data. AgentTune trajectories feed AuditKIT’s independent state checks. Model improvement remains a hypothesis until real before/after runs are available.
+An invoice assistant can face a changed sending approval halfway through reconciliation. Permit tests whether Tiny Aya keeps a correct report, records a delivery awaiting renewed approval, and uses a replacement reviewer while following current gateway authority. The preliminary model probe failed all 12 development tasks and exposed both tool-contract mistakes and forbidden attempts. AgentTune teaching and model trajectories feed AuditKIT’s independent state checks. Model improvement remains a hypothesis until real before/after runs are available.

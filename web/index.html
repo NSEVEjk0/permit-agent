@@ -4,7 +4,7 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Permit — keep the report moving when approval changes</title>
   <meta name="description" content="Inspect an invoice assistant's response to withdrawn approval, a changed reviewer and forged vendor instructions. Fictional workflows, replayable evidence and honest model evaluation.">
-  <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/style.css">
+  <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/probe.css">
 </head>
 <body>
 <a class="skip" href="#lab">Skip to the workflow</a>
@@ -40,7 +40,7 @@
     <div class="experiment">
       <aside class="scenarios">
         <p class="eyebrow">Choose a case</p><div id="case-list"></div>
-        <div class="model-state"><span>Model experiment</span><strong>API baseline pending · adapter not trained</strong><p>A bounded Cohere API probe can run without a GPU. Actual before/after training results are still pending.</p><a href="https://github.com/NSEVEjk0/permit-agent#run-the-free-baseline" target="_blank" rel="noopener noreferrer">Run the baseline ↗</a></div>
+        <div class="model-state"><span>Model experiment</span><strong>Probe recorded · adapter not trained</strong><p>The prompted model retained no correct report in 12 development cases. Inspect its calls and failures below.</p><a href="#results">Inspect the model probe ↓</a></div>
       </aside>
       <div class="case-view">
         <div class="case-head"><div><p class="eyebrow">The requested work</p><h3 id="case-title">Reading the workflow…</h3></div><button id="download" class="button small">Download evidence ↓</button></div>
@@ -71,8 +71,19 @@
     </div>
   </section>
 
-  <section class="results">
-    <div><p class="eyebrow">Model results</p><h2>Evidence before a claim.</h2><p>No training improvement has been measured. Inspect a completed hosted baseline or local model evaluation in your browser; the file stays on your device.</p></div>
+  <section class="results" id="results">
+    <div><p class="eyebrow">Recorded model results</p><h2>The model still needs to learn.</h2><p>A real Tiny Aya development probe retained no correct report. Inspect the attempted actions, the gateway’s response and the model’s own words. Adapter training and a matching before/after comparison remain pending.</p></div>
+    <article id="published-probe" class="published-probe" aria-label="Recorded Tiny Aya development probe">
+      <p id="probe-summary" role="status">Loading the recorded development probe…</p>
+      <div id="probe-metrics" class="probe-metrics"></div>
+      <p class="scope">This is one trial on 12 fictional development cases. The hosted model revision is unreported. These results establish no training improvement or general reliability.</p>
+      <div class="probe-downloads"><a class="button small" href="/examples/hosted-baseline/run.json" download="permit-hosted-baseline.json">Download measured report ↓</a><a class="button small" href="/examples/hosted-baseline/trajectories.jsonl" download="permit-hosted-trajectories.jsonl">Download model trajectories ↓</a><a href="/examples/hosted-baseline/manifest.json" target="_blank" rel="noopener noreferrer">Artifact fingerprints ↗</a></div>
+      <label class="probe-picker" for="probe-case">Inspect a model case<select id="probe-case" disabled></select></label>
+      <div id="probe-outcome" class="outcome-card warn"></div>
+      <div id="probe-trace"></div>
+      <div id="probe-responses"></div>
+    </article>
+    <div class="inspect-own"><h3>Inspect another evaluation</h3><p>Choose a completed hosted probe or local evaluation. The file stays on your device.</p></div>
     <label class="upload">Inspect evaluation JSON<input id="report-file" type="file" accept="application/json,.json"></label>
     <div id="report-result" role="status"></div>
   </section>

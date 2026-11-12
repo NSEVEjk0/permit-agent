@@ -6,6 +6,7 @@ const money = cents => new Intl.NumberFormat('en-US', {style: 'currency', curren
 const toolLabels = {read_permissions: 'Read current approval', read_record: 'Read invoices and purchase orders', save_draft: 'Save the payment report', deliver_summary: 'Send the saved report', request_approval: 'Record the delivery awaiting approval'};
 const checkLabels = {ready: 'Ready for review', amount_mismatch: 'Amount mismatch', duplicate: 'Duplicate invoice'};
 const reviewer = (destination, caseData) => destination === caseData.destination ? 'Finance desk' : destination === caseData.replacement_destination ? 'Controller' : destination;
+let publishedReport, publishedTrajectories;
 
 function renderReport(caseData, evidence) {
   const draft = evidence.final_state.draft;
@@ -62,12 +63,7 @@ document.querySelector('#download').addEventListener('click', () => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 
-document.querySelector('#report-file').addEventListener('change', async event => {
-  const file = event.target.files?.[0], result = document.querySelector('#report-result');
-  if (!file) return;
-  try {
-    if (file.size > 16 * 1024 * 1024) throw new Error('Use a report smaller than 16 MiB.');
-    const report = JSON.parse(await file.text());
+async function validateModelReport(report) {
     const hosted = report.schema === 'permit-probe-v1' && report.mode === 'hosted-model-probe';
     const local = report.schema === 'permit-eval-v2' && report.mode === 'model-evaluation';
     if ((!hosted && !local) || report.status !== 'completed') throw new Error('Choose a completed real-model Permit evaluation or hosted probe; scripted harness files are not model results.');
@@ -75,10 +71,73 @@ document.querySelector('#report-file').addEventListener('change', async event =>
     if (typeof canonical_payload !== 'string' || await hash(canonical_payload) !== report_sha256 || stable(JSON.parse(canonical_payload)) !== stable(payload)) throw new Error('The report fingerprint does not match its contents.');
     const metrics = report.summary?.metrics;
     if (!metrics || !Number.isFinite(metrics.safe_complete?.mean) || metrics.safe_complete.mean < 0 || metrics.safe_complete.mean > 1 || !Number.isInteger(report.summary.episodes) || report.summary.episodes < 1 || !report.identity?.base_model) throw new Error('The report is missing measured outcomes.');
+    return {metrics, hosted};
+}
+
+document.querySelector('#report-file').addEventListener('change', async event => {
+  const file = event.target.files?.[0], result = document.querySelector('#report-result');
+  if (!file) return;
+  try {
+    if (file.size > 16 * 1024 * 1024) throw new Error('Use a report smaller than 16 MiB.');
+    const report = JSON.parse(await file.text());
+    const {metrics, hosted} = await validateModelReport(report);
     const scope = hosted ? 'Preliminary hosted baseline. The model revision is unreported; this file does not establish adapter improvement.' : 'Local model evaluation. Compare matching model revisions, prompts, decoding and backend to assess training.';
     result.innerHTML = `<strong>Local report fingerprint agrees.</strong><br>${esc(report.identity.base_model)} · ${report.summary.episodes} recorded episodes · ${(metrics.safe_complete.mean * 100).toFixed(1)}% safe completion on this subset.<br>${scope}<br>Model identity is supplied by the run artifact. Reproduce its recorded trajectories to verify the model claim.`;
   } catch (error) { result.textContent = error.message; }
 });
+
+function renderModelCase() {
+  const row = publishedReport.results.cases.find(item => item.case_id === document.querySelector('#probe-case').value);
+  const trajectory = publishedTrajectories.find(item => item.trajectory_id === row.trajectory_id);
+  const evidence = trajectory.metadata.permit;
+  document.querySelector('#probe-outcome').textContent = `${row.case_id}: ${row.draft_complete ? 'Correct report retained' : 'No correct report retained'}. ${row.attempted_violations} forbidden attempts · ${row.executed_violations} unauthorized effects. Episode ended: ${(row.end_reason || 'not recorded').replaceAll('_', ' ')}.`;
+  let controlIndex = 0;
+  const notice = control => `<div class="control-row">Manager’s approval changed to version ${control.snapshot.policy_version}: ${control.kind === 'revoke' ? 'sending withdrawn' : 'approved reviewer replaced'}.</div>`;
+  let trace = evidence.attempts.map(attempt => {
+    let notices = '';
+    while (controlIndex < evidence.controls.length && evidence.controls[controlIndex].effective_from_seq <= attempt.seq) notices += notice(evidence.controls[controlIndex++]);
+    return `${notices}<div class="trace-row ${attempt.attempted_violation ? 'bad' : ''}"><span class="step-num">${String(attempt.seq).padStart(2, '0')}</span><div><strong>${esc(toolLabels[attempt.tool] || attempt.tool)}</strong><small>Approval version ${attempt.policy_version}${attempt.reason ? ' · ' + esc(attempt.reason.replaceAll('_', ' ')) : ''}</small></div><b>${attempt.executed ? 'Executed' : 'Blocked'}</b></div>`;
+  }).join('');
+  while (controlIndex < evidence.controls.length) trace += notice(evidence.controls[controlIndex++]);
+  document.querySelector('#probe-trace').innerHTML = trace || '<p>No tool action was recorded.</p>';
+  const responses = trajectory.metadata.cohere_responses.map((response, index) => {
+    const text = (response.message?.content || []).map(part => part.text || '').join('\n');
+    return `<details><summary>Model reply ${index + 1} · ${esc(response.finish_reason || 'finish reason unavailable')}</summary><pre>${esc(text)}</pre></details>`;
+  }).join('');
+  document.querySelector('#probe-responses').innerHTML = (trajectory.final_response ? `<details open><summary>Model’s final statement · compare with the tool outcomes above</summary><pre>${esc(trajectory.final_response)}</pre></details>` : '') + responses;
+}
+
+document.querySelector('#probe-case').addEventListener('change', renderModelCase);
+
+async function loadPublishedProbe() {
+  const summary = document.querySelector('#probe-summary');
+  try {
+    const replies = await Promise.all([fetch('/examples/hosted-baseline/run.json'), fetch('/examples/hosted-baseline/trajectories.jsonl'), fetch('/examples/hosted-baseline/manifest.json')]);
+    if (replies.some(reply => !reply.ok)) throw new Error('The recorded model probe could not be loaded.');
+    const [reportText, trajectoryText, manifestText] = await Promise.all(replies.map(reply => reply.text()));
+    const report = JSON.parse(reportText), manifest = JSON.parse(manifestText);
+    await validateModelReport(report);
+    if (await hash(reportText) !== manifest.files?.['run.json']?.sha256 || await hash(trajectoryText) !== manifest.files?.['trajectories.jsonl']?.sha256) throw new Error('The published model files do not match their artifact fingerprints.');
+    const rows = report.results?.cases;
+    const trajectories = trajectoryText.trim().split('\n').map(line => JSON.parse(line));
+    if (!Array.isArray(rows) || rows.length !== report.summary.episodes || rows.length !== trajectories.length || rows.some(row => !trajectories.some(item => item.trajectory_id === row.trajectory_id && item.metadata?.permit?.case_id === row.case_id && !item.metadata?.incomplete))) throw new Error('The model report is missing matching trajectories.');
+    publishedReport = report; publishedTrajectories = trajectories;
+    summary.textContent = `Tiny Aya Global · ${rows.length} development cases · ${report.api_calls} Cohere requests · report and trajectory fingerprints agree.`;
+    const count = key => rows.reduce((sum, row) => sum + Number(row[key] || 0), 0);
+    document.querySelector('#probe-metrics').innerHTML = [
+      [count('draft_complete') + '/' + rows.length, 'Correct reports retained'],
+      [count('task_complete') + '/' + rows.length, 'Useful tasks completed'],
+      [count('attempted_violations'), 'Forbidden attempts'],
+      [count('executed_violations'), 'Unauthorized effects']
+    ].map(([value, label]) => `<div><strong>${esc(value)}</strong><span>${esc(label)}</span></div>`).join('');
+    const picker = document.querySelector('#probe-case');
+    const changes = {none: 'Approval unchanged', revoke: 'Sending withdrawn', narrow: 'Reviewer replaced'};
+    picker.innerHTML = rows.map(row => `<option value="${esc(row.case_id)}">${esc(row.case_id)} · ${esc(row.family.replaceAll('-', ' '))} · ${esc(changes[row.change])}</option>`).join('');
+    picker.disabled = false;
+    picker.value = rows.find(row => row.change === 'revoke' && trajectories.find(item => item.trajectory_id === row.trajectory_id)?.final_response)?.case_id || rows[0].case_id;
+    renderModelCase();
+  } catch (error) { summary.textContent = error.message; }
+}
 
 async function start() {
   try {
@@ -90,3 +149,4 @@ async function start() {
   } catch (error) { document.querySelector('#task').textContent = error.message; }
 }
 void start();
+void loadPublishedProbe();
