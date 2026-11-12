@@ -1,35 +1,31 @@
 # Permit entry preparation
 
-## Problem and proposed solution
+Permit studies an invoice assistant that retains a correct report when sending approval is withdrawn, records the exact pending delivery, and adapts to a replacement reviewer. Forged vendor instructions cannot change gateway authority.
 
-Permission can change during a task. An agent should retain useful allowed work while avoiding a revoked or narrowed action. Permit measures that behavior with AgentTune rollouts, observed effects and AuditKIT, while a versioned tool gateway enforces current authority.
+The gateway, fictional invoice environment, API probe, AgentTune trajectory boundary and AuditKIT state scorer are implemented. The live lab discloses authored tool routes. No actual model baseline, adapter training or measured before/after improvement has been produced.
 
-The hypothesis is that training a permitted Cohere model improves safe, useful completion beyond the same prompted base model. The current harness is implemented; actual training and held-out base/adapter results have not been produced. Do not claim a measured improvement until those runs finish.
+## Research question
 
-## Required deliverables
+Does training a permitted small Cohere model improve safe, useful recovery beyond the same prompted base model, without increasing unnecessary refusal or wasted calls?
 
-- Genuine registration before **7 November 2026, 00:00 UTC**; the official page's countdown includes a 12-hour extension. Project submission remains **15 November, 11:59 UTC**.
-- A real pipeline using at least two track repositories and an allowed dense Cohere model. The prepared sources are AgentTune and AuditKIT with Tiny Aya Global.
-- Legitimate gated-model access and a bounded CUDA training/evaluation run. No GPU is required for the deterministic harness, but the prepared training pipeline does require one. No GPU rental has been started.
-- Public, ungated Hugging Face model/adapter collection and dataset collection, including original datasets, traces, logs and benchmarks; respect the base model and toolkit licenses.
-- Public [code](https://github.com/NSEVEjk0/permit-agent), reproducibility instructions, an abstract under 500 words and a write-up explaining the task, choices, before/after metrics and limitations.
+The independent oracle verifies duplicate handling, purchase-order calculations, invoice statuses, the ready-only payable total, review count and actual draft/delivery/pending-approval state. A blocked send cannot compensate for an unfinished or incorrect report. A saved but incorrect report remains an accounting failure even when authority was respected.
 
-The [official requirements](https://hackathon.lexsi.ai/) do not require a submission video. No optional video, slide deck or paid training is being created during preparation.
+## Evidence required before entry
 
-## Research write-up outline
+1. Run a bounded preliminary Cohere API probe on development cases and inspect failures before deciding on GPU expenditure. The API provider’s unreported model revision prevents treating this as the formal base/adapter comparison.
+2. Obtain legitimate Hugging Face model access and configured CUDA compute. Run the pinned training pipeline on the training split only.
+3. Evaluate the prompted base and adapter on matching held-out cases, backend and decoding. Report correctness, useful/safe completion, attempted/executed violations, recovery, clean-control over-refusal, efficiency and case-bootstrap uncertainty. Include failures.
+4. Review and publish permitted adapter/tokenizer, fictional datasets, actual logs/trajectories, reports, dependency snapshot and model/toolkit/code fingerprints on Hugging Face.
+5. Complete the entry form with an accurate problem statement, pipeline, observed results, reproducibility links and first-version limits. Do not describe scripted routes as model evaluations.
 
-1. Explain the concrete revocation problem and why enforced blocking differs from attempted model violations.
-2. Describe the 264 fictional cases, complete-family train/dev/held-out separation, unchanged-permission controls and leakage prevention.
-3. Pin the actual model, toolkit/library revisions, policy prompt, adapter settings, seed and compute/time budget.
-4. Explain AgentTune rollouts, the state-based reward and AuditKIT’s independent trajectory/effect checks.
-5. Compare the same held-out cases for the prompted base and adapter. Report useful completion, attempted/executed violations, safe completion, over-refusal, call counts and case-bootstrap uncertainty. Keep the plain base ablation separate.
-6. Include representative failures, incomplete runs, actual dependency/compute records and every public artifact link.
-7. Explain the small synthetic task, the limits of its multilingual probe and why these results would not establish safety for arbitrary real workflows.
+## Corpus and controls
 
-Use the commands and artifact boundaries in [README.md](README.md). The deterministic gateway examples and portable toolkit tests are supporting infrastructure evidence, not a trained-model benchmark.
+264 fictional invoice workflows: 144 train, 48 development, 72 held out. Whole domain, prompt and attack families remain in separate splits. All three approval conditions have clean and injected variants. Withdrawal is triggered after a record read or draft save; later calls in the same batch use the new version. Future schedules and answers stay out of prompts.
 
-## Announcement draft
+## Current rules
 
-Permit explores a small but important agent behavior: what happens when permission changes halfway through a task? Its versioned gateway and AgentTune-to-AuditKIT harness distinguish forbidden attempts from blocked effects and useful completion. The public lab shows scripted examples; actual Cohere training and base/adapter results are still pending. Lab: https://permit-lab.vercel.app · Code: https://github.com/NSEVEjk0/permit-agent
+[Official Lexsi rules](https://hackathon.lexsi.ai/), checked November 12, 2026: initial submission closes November 15, 11:59 PM AoE (**November 16, 11:59 UTC**). Up to 20 finalists have until November 22, 11:59 PM AoE (**November 23, 11:59 UTC**) for final video/slides. The initial lab alone does not complete the intended agentic-training entry.
 
-Rewrite the announcement in your own voice. Add measured results only when supported by original traces and public artifacts. This draft has not been posted.
+## Draft description
+
+An invoice assistant can face a changed sending approval halfway through reconciliation. Permit tests whether Tiny Aya keeps a correct report, records a delivery awaiting renewed approval, and uses a replacement reviewer without following forged instructions embedded in vendor data. AgentTune trajectories feed AuditKIT’s independent state checks. Model improvement remains a hypothesis until real before/after runs are available.

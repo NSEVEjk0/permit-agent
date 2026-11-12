@@ -29,7 +29,7 @@ jobs:
           repository: Lexsi-Labs/AuditKIT
           ref: 71316da345784ff220d5ed59337441a59ab31526
           path: .local/auditkit-source
-      - run: python3 -m unittest tests.test_environment tests.test_toolkits -v
+      - run: python3 -m unittest tests.test_environment tests.test_hosted tests.test_toolkits -v
         env:
           AGENTTUNE_SOURCE_DIR: .local/agenttune-source
           PYTHONPATH: .local/auditkit-source/src
@@ -38,6 +38,7 @@ jobs:
       - run: python3 -m permit.cli fixtures --out reports/harness.json
       - run: diff web/examples/harness.json reports/harness.json
       - run: python3 -m permit.cli train --out runs/plan-only
+      - run: python3 -m permit.cli probe --out runs/probe-plan-only
       - run: npm ci --no-audit --no-fund
       - run: npm run check:web
       - run: npx playwright install --with-deps chromium

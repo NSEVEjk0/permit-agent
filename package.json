@@ -1,1 +1,1 @@
-{"name":"permit","private":true,"type":"module","engines":{"node":">=22"},"scripts":{"check:web":"node --check web/app.js","test":"python3 -m unittest tests.test_environment -v","test:browser":"playwright test"},"devDependencies":{"@playwright/test":"1.63.0"}}
+{"name":"permit","private":true,"type":"module","engines":{"node":">=22"},"scripts":{"check:web":"node --check web/app.js && node --check api/config.js","test":"python3 -m unittest tests.test_environment tests.test_hosted -v","test:browser":"playwright test"},"devDependencies":{"@playwright/test":"1.63.0"}}

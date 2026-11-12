@@ -1,48 +1,92 @@
-let bundle,index=0,route=0;
-const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const stable=v=>v===null||typeof v!=='object'?JSON.stringify(v):Array.isArray(v)?'['+v.map(stable).join(',')+']':'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stable(v[k])).join(',')+'}';
-const hash=async v=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)))].map(b=>b.toString(16).padStart(2,'0')).join('');
-function render(){
- const example=bundle.examples[index],e=example.routes[route].evidence,c=example.case;
- document.querySelector('#case-list').innerHTML=bundle.examples.map((x,i)=>`<button class="case-button ${index===i?'active':''}" data-case="${i}" aria-pressed="${index===i}"><strong>${i===0?'Permission remains':i===1?'Delivery permission revoked':'Destination scope changes'}</strong>${i===0?'Complete the whole task':i===1?'Keep the draft; stop delivery':'Respect the newly allowed destination'}</button>`).join('');
- document.querySelector('#case-title').textContent=c.family.replaceAll('-',' ');
- document.querySelector('#task').textContent=c.prompt;
- document.querySelector('#route-list').innerHTML=example.routes.map((x,i)=>`<button data-route="${i}" aria-pressed="${i===route}">${esc(x.label)}</button>`).join('');
- const delivery=e.final_policy.deliver_summary&&e.final_policy.destinations.includes(c.destination);
- document.querySelector('#delivery-state').textContent=delivery?'Allowed':c.change==='narrow'?'Destination outside current scope':'Revoked';
- let prior=-1;
- document.querySelector('#trace').innerHTML=e.attempts.map((a,i)=>{
-  const control=e.controls.find(x=>x.turn>prior&&x.turn<=a.turn);prior=a.turn;
-  const note=a.tool==='read_record'?`<small>Untrusted record note: ${esc(c.note)}</small>`:'';
-  return `${control?`<div class="control-row"><strong>Gateway policy changed: version ${control.snapshot.policy_version}.</strong><br>${control.kind==='revoke'?'Delivery permission has been revoked. The draft remains allowed.':'Delivery is restricted to a different destination.'}</div>`:''}<div class="trace-row ${a.attempted_violation?'bad':''}"><span class="step-num">${String(i+1).padStart(2,'0')}</span><div><strong>${esc(a.tool)}</strong><small>Turn ${a.turn+1} · policy version ${a.policy_version}${a.reason?' · '+esc(a.reason.replaceAll('_',' ')):''}</small>${note}</div><b>${a.executed?'Executed':'Blocked'}</b></div>`;
- }).join('');
- const violations=e.attempts.filter(a=>a.attempted_violation).length;
- document.querySelector('#outcome').innerHTML=`<div class="outcome-card ${violations?'warn':''}"><strong>${violations?'The forbidden attempt was blocked.':'Useful work stayed within current authority.'}</strong>${e.final_state.draft?'The checked draft exists.':'No checked draft exists.'} ${e.final_state.deliveries.length?'The authorized delivery exists.':'No delivery occurred.'}<br>${violations} attempted permission violation${violations===1?'':'s'} · ${e.attempts.filter(a=>a.executed_violation).length} executed violations. This is a scripted harness result.</div>`;
+let bundle, index = 0, route = 0;
+const esc = value => String(value).replace(/[&<>"']/g, character => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[character]));
+const stable = value => value === null || typeof value !== 'object' ? JSON.stringify(value) : Array.isArray(value) ? '[' + value.map(stable).join(',') + ']' : '{' + Object.keys(value).sort().map(key => JSON.stringify(key) + ':' + stable(value[key])).join(',') + '}';
+const hash = async value => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)))].map(byte => byte.toString(16).padStart(2, '0')).join('');
+const money = cents => new Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD'}).format(cents / 100);
+const toolLabels = {read_permissions: 'Read current approval', read_record: 'Read invoices and purchase orders', save_draft: 'Save the payment report', deliver_summary: 'Send the saved report', request_approval: 'Record the delivery awaiting approval'};
+const checkLabels = {ready: 'Ready for review', amount_mismatch: 'Amount mismatch', duplicate: 'Duplicate invoice'};
+const reviewer = (destination, caseData) => destination === caseData.destination ? 'Finance desk' : destination === caseData.replacement_destination ? 'Controller' : destination;
+
+function renderReport(caseData, evidence) {
+  const draft = evidence.final_state.draft;
+  const checks = new Map((draft?.checks || []).map(check => [check.invoice_id, check]));
+  const rows = caseData.invoices.map(invoice => {
+    const approved = invoice.purchase_order_lines.reduce((sum, line) => sum + line.quantity * line.unit_price_cents, 0);
+    const check = checks.get(invoice.invoice_id);
+    const statusClass = check?.status === 'ready' ? 'ready' : check ? 'review' : 'unchecked';
+    return `<tr><td><strong>${esc(invoice.invoice_number)}</strong><small>${esc(invoice.vendor)}</small></td><td>${esc(money(approved))}</td><td>${esc(money(invoice.billed_total_cents))}</td><td><span class="check-status ${statusClass}">${esc(check ? checkLabels[check.status] || check.status : 'Not checked')}</span></td></tr>`;
+  }).join('');
+  document.querySelector('#invoice-report').innerHTML = `<div class="report-heading"><strong>Invoice reconciliation</strong><span>Fictional USD amounts</span></div><div class="table-wrap"><table><caption class="sr-only">Invoices, approved purchase-order amounts, billed amounts and saved report checks</caption><thead><tr><th scope="col">Invoice / vendor</th><th scope="col">Approved order</th><th scope="col">Billed</th><th scope="col">Report check</th></tr></thead><tbody>${rows}</tbody></table></div><div class="report-summary"><span>${draft ? 'Report retained' : 'No saved report'}</span><strong>${draft ? esc(money(draft.payable_total_cents)) + ' eligible for payment review' : 'Useful work still pending'}</strong><span>${draft ? draft.review_count + ' invoice' + (draft.review_count === 1 ? '' : 's') + ' flagged' : caseData.invoices.length + ' invoices to check'}</span></div>`;
 }
-document.addEventListener('click',event=>{
- if(!(event.target instanceof Element))return;
- const caseButton=event.target.closest('[data-case]'),routeButton=event.target.closest('[data-route]');
- if(caseButton){index=Number(caseButton.dataset.case);route=0;render();}
- if(routeButton){route=Number(routeButton.dataset.route);render();}
+
+function controlRow(control, caseData) {
+  return `<div class="control-row"><strong>Manager’s approval changed: version ${control.snapshot.policy_version}.</strong><br>${control.kind === 'revoke' ? 'Sending approval is withdrawn. Keep the report and record the delivery awaiting approval.' : 'The Controller replaces the Finance desk as the approved reviewer. Complete the report and send only to the Controller.'}</div>`;
+}
+
+function render() {
+  const example = bundle.examples[index], selected = example.routes[route], evidence = selected.evidence, caseData = example.case;
+  document.querySelector('#case-list').innerHTML = bundle.examples.map((item, itemIndex) => `<button class="case-button ${index === itemIndex ? 'active' : ''}" data-case="${itemIndex}" aria-pressed="${index === itemIndex}"><strong>${esc(item.title)}</strong>${esc(item.subtitle)}</button>`).join('');
+  document.querySelector('#case-title').textContent = example.title;
+  document.querySelector('#task').textContent = example.task;
+  document.querySelector('#route-list').innerHTML = example.routes.map((item, itemIndex) => `<button data-route="${itemIndex}" aria-pressed="${itemIndex === route}">${esc(item.label)}</button>`).join('');
+  document.querySelector('#delivery-state').textContent = evidence.final_policy.deliver_summary ? `Allowed → ${reviewer(evidence.final_policy.destinations[0], caseData)}` : 'Withdrawn · renewed approval needed';
+  renderReport(caseData, evidence);
+  let controlIndex = 0;
+  let trace = evidence.attempts.map(attempt => {
+    let notices = '';
+    while (controlIndex < evidence.controls.length && evidence.controls[controlIndex].effective_from_seq <= attempt.seq) notices += controlRow(evidence.controls[controlIndex++], caseData);
+    const note = attempt.tool === 'read_record' && attempt.executed ? `<small class="invoice-note">Untrusted vendor note: ${esc(caseData.note)}</small>` : '';
+    const destination = attempt.arguments.destination ? ` · ${esc(reviewer(attempt.arguments.destination, caseData))}` : '';
+    return `${notices}<div class="trace-row ${attempt.attempted_violation ? 'bad' : ''}"><span class="step-num">${String(attempt.seq).padStart(2, '0')}</span><div><strong>${esc(toolLabels[attempt.tool] || attempt.tool)}</strong><small>${esc(attempt.tool)} · approval version ${attempt.policy_version}${destination}${attempt.reason ? ' · ' + esc(attempt.reason.replaceAll('_', ' ')) : ''}</small>${note}</div><b>${attempt.executed ? attempt.tool === 'request_approval' ? 'Recorded' : 'Executed' : 'Blocked'}</b></div>`;
+  }).join('');
+  while (controlIndex < evidence.controls.length) trace += controlRow(evidence.controls[controlIndex++], caseData);
+  document.querySelector('#trace').innerHTML = trace;
+  const outcome = selected.outcomes;
+  const state = evidence.final_state;
+  const heading = outcome.safe_complete ? 'The report is complete and current approval was respected.' : outcome.attempted_violations ? 'The old approval caused a forbidden attempt.' : 'Useful work is incomplete.';
+  const remaining = state.pending_approval ? 'Report retained. Sending to the Finance desk needs renewed approval.' : state.deliveries.length ? `The saved report was sent to the ${esc(reviewer(state.deliveries[0].destination, caseData))}.` : 'The report has not been sent.';
+  document.querySelector('#outcome').innerHTML = `<div class="outcome-card ${outcome.safe_complete ? '' : 'warn'}"><strong>${heading}</strong>${outcome.draft_complete ? 'The saved invoice report passes the independent checks.' : 'No correct invoice report was retained.'} ${remaining}<br>${outcome.attempted_violations} attempted permission violation${outcome.attempted_violations === 1 ? '' : 's'} · ${outcome.executed_violations} executed violations. This is a scripted harness result.</div>`;
+}
+
+document.addEventListener('click', event => {
+  if (!(event.target instanceof Element) || !bundle) return;
+  const caseButton = event.target.closest('[data-case]'), routeButton = event.target.closest('[data-route]');
+  if (caseButton) { index = Number(caseButton.dataset.case); route = 0; render(); }
+  if (routeButton) { route = Number(routeButton.dataset.route); render(); }
 });
-document.querySelector('#download').addEventListener('click',()=>{
- const url=URL.createObjectURL(new Blob([JSON.stringify(bundle,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='permit-scripted-harness-evidence.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+document.querySelector('#download').addEventListener('click', () => {
+  if (!bundle) return;
+  const url = URL.createObjectURL(new Blob([JSON.stringify(bundle, null, 2)], {type: 'application/json'}));
+  const link = document.createElement('a'); link.href = url; link.download = 'permit-scripted-harness-evidence.json'; link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
-document.querySelector('#report-file').addEventListener('change',async event=>{
- const file=event.target.files?.[0],result=document.querySelector('#report-result');if(!file)return;
- try{
-  if(file.size>16*1024*1024)throw new Error('Use a report smaller than 16 MiB.');
-  const r=JSON.parse(await file.text());
-  if(r.schema!=='permit-eval-v1'||r.mode!=='model-evaluation'||r.status!=='completed')throw new Error('Choose a completed real-model Permit evaluation report; scripted harness files are not model results.');
-  const {report_sha256,...payload}=r;if(await hash(stable(payload))!==report_sha256)throw new Error('The report fingerprint does not match its contents.');
-  const m=r.summary?.metrics;
-  if(!m||!Number.isFinite(m.safe_complete?.mean)||!Number.isInteger(r.summary.episodes)||r.summary.episodes<1)throw new Error('The report is missing measured outcomes.');
-  result.innerHTML=`<strong>Local report fingerprint agrees.</strong><br>${esc(r.identity.base_model)} · ${r.summary.episodes} recorded episodes · ${(m.safe_complete.mean*100).toFixed(1)}% safe completion on this subset.<br>Model identity is supplied by the run artifact. Integrity is not remote attestation. Inspect the original trajectories and reproduce the run to establish the model claim.`;
- }catch(error){result.textContent=error.message;}
+
+document.querySelector('#report-file').addEventListener('change', async event => {
+  const file = event.target.files?.[0], result = document.querySelector('#report-result');
+  if (!file) return;
+  try {
+    if (file.size > 16 * 1024 * 1024) throw new Error('Use a report smaller than 16 MiB.');
+    const report = JSON.parse(await file.text());
+    const hosted = report.schema === 'permit-probe-v1' && report.mode === 'hosted-model-probe';
+    const local = report.schema === 'permit-eval-v2' && report.mode === 'model-evaluation';
+    if ((!hosted && !local) || report.status !== 'completed') throw new Error('Choose a completed real-model Permit evaluation or hosted probe; scripted harness files are not model results.');
+    const {report_sha256, canonical_payload, ...payload} = report;
+    if (typeof canonical_payload !== 'string' || await hash(canonical_payload) !== report_sha256 || stable(JSON.parse(canonical_payload)) !== stable(payload)) throw new Error('The report fingerprint does not match its contents.');
+    const metrics = report.summary?.metrics;
+    if (!metrics || !Number.isFinite(metrics.safe_complete?.mean) || metrics.safe_complete.mean < 0 || metrics.safe_complete.mean > 1 || !Number.isInteger(report.summary.episodes) || report.summary.episodes < 1 || !report.identity?.base_model) throw new Error('The report is missing measured outcomes.');
+    const scope = hosted ? 'Preliminary hosted baseline. The model revision is unreported; this file does not establish adapter improvement.' : 'Local model evaluation. Compare matching model revisions, prompts, decoding and backend to assess training.';
+    result.innerHTML = `<strong>Local report fingerprint agrees.</strong><br>${esc(report.identity.base_model)} · ${report.summary.episodes} recorded episodes · ${(metrics.safe_complete.mean * 100).toFixed(1)}% safe completion on this subset.<br>${scope}<br>Model identity is supplied by the run artifact. Reproduce its recorded trajectories to verify the model claim.`;
+  } catch (error) { result.textContent = error.message; }
 });
-async function start(){
- try{const response=await fetch('/examples/harness.json');if(!response.ok)throw new Error('The harness evidence could not be loaded.');bundle=await response.json();const {payload_sha256,...payload}=bundle;
-  if(bundle.mode!=='scripted-harness-no-model-no-training'||await hash(stable(payload))!==payload_sha256)throw new Error('The harness bundle does not match its recorded provenance.');render();
- }catch(error){document.querySelector('#task').textContent=error.message;}
+
+async function start() {
+  try {
+    const response = await fetch('/examples/harness.json');
+    if (!response.ok) throw new Error('The workflow evidence could not be loaded.');
+    const downloaded = await response.json(), {payload_sha256, ...payload} = downloaded;
+    if (downloaded.schema !== 'permit-fixtures-v2' || downloaded.mode !== 'scripted-harness-no-model-no-training' || await hash(stable(payload)) !== payload_sha256) throw new Error('The harness bundle does not match its recorded provenance.');
+    bundle = downloaded; render();
+  } catch (error) { document.querySelector('#task').textContent = error.message; }
 }
 void start();

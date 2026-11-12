@@ -12,6 +12,12 @@ def main():
     p=commands.add_parser('corpus');p.add_argument('--out',type=Path,default=Path('data'))
     p=commands.add_parser('fixtures');p.add_argument('--out',type=Path,default=Path('web/examples/harness.json'))
     p=commands.add_parser('doctor')
+    p=commands.add_parser('probe',help='Plan or run a bounded, preliminary Cohere API baseline without a GPU.')
+    p.add_argument('--data',type=Path,default=Path('data'));p.add_argument('--out',type=Path,required=True)
+    p.add_argument('--execute',action='store_true');p.add_argument('--limit',type=int,choices=[12,24],default=12)
+    p.add_argument('--profile',choices=['plain','policy'],default='policy');p.add_argument('--max-api-calls',type=int,default=96)
+    p.add_argument('--max-turns',type=int,default=8);p.add_argument('--max-tokens',type=int,default=768)
+    p.add_argument('--wall-seconds',type=int,default=600);p.add_argument('--key-file',type=Path)
     for name in ('train','evaluate'):
         p=commands.add_parser(name);p.add_argument('--data',type=Path,default=Path('data'));p.add_argument('--out',type=Path,required=True)
         p.add_argument('--execute',action='store_true');p.add_argument('--wall-seconds',type=int,default=1800)
@@ -29,7 +35,21 @@ def main():
         args.out.parent.mkdir(parents=True,exist_ok=True);args.out.write_bytes(canonical(examples()));print('Wrote disclosed scripted harness examples; no model inference or training occurred.');return
     if args.command=='doctor':
         print(json.dumps({'model':MODEL,'revision':MODEL_REVISION,'license_confirmed':os.getenv('PERMIT_MODEL_LICENSE_ACCEPTED')=='true',
-              'model_access_token_present':bool(os.getenv('HF_TOKEN')),'training_automatic':False,'gpu_run':'Requires the configured CUDA machine and an explicit bounded --execute command.'}));return
+              'model_access_token_present':bool(os.getenv('HF_TOKEN')),'cohere_api_key_present':bool(os.getenv('COHERE_API_KEY') or os.getenv('CO_API_KEY')),
+              'hosted_probe':'Cohere evaluation key; no GPU or model download required. Explicit --execute and request cap.',
+              'training_automatic':False,'gpu_run':'Requires the configured CUDA machine and an explicit bounded --execute command.'}));return
+    if args.command=='probe':
+        from .hosted import select_dev_cases,probe_plan,run_probe
+        try:
+            cases=select_dev_cases(load_cases(args.data/'dev.jsonl'),args.limit)
+            plan=probe_plan(cases,args.out,args.max_api_calls,args.max_turns,args.max_tokens,args.wall_seconds,args.profile)
+            if not args.execute:
+                print(json.dumps({**plan,'execute':False}));return
+            result=run_probe(cases,args.out,args.max_api_calls,args.max_turns,args.max_tokens,args.wall_seconds,
+                             args.profile,args.key_file,progress=lambda row:print(json.dumps(row),flush=True))
+            print(json.dumps({'completed':result['status']=='completed','output':str(args.out),'api_calls':result['api_calls']}));return
+        except (ValueError,RuntimeError,OSError) as error:
+            raise SystemExit(str(error)) from None
     if args.command in ('train','evaluate'):
         split='train' if args.command=='train' else args.split;cases=load_cases(args.data/(split+'.jsonl'))
         if args.command=='evaluate':

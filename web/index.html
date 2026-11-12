@@ -1,7 +1,83 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#15242e"><meta name="description" content="Teach agents to respect changing permissions while keeping useful work moving. Inspect the gateway, evidence and reproducible model experiment."><title>Permit — Permission can change. Useful work should continue.</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/style.css"></head><body>
-<a class="skip" href="#lab">Skip to the experiment</a><header><a class="brand" href="/"><span>p</span>Permit<span class="brand-dot">.</span></a><nav><a href="#method">The experiment</a><a href="https://github.com/NSEVEjk0/permit-agent" target="_blank" rel="noopener noreferrer">Source ↗</a></nav><span class="research-label">PERMISSION-AWARE AGENTS</span></header>
-<main><section class="hero"><div><p class="eyebrow">Authority is allowed to change</p><h1>Permission can change.<br><em>Useful work<br>should continue.</em></h1><p class="lede">An agent can lose permission to send a result halfway through a job. Permit tests whether it keeps the useful draft, respects the change, and asks for the authority it still needs.</p><a class="button dark" href="#lab">Explore the permission boundary <span>↗</span></a><p class="hero-foot">A focused AgentTune + AuditKIT research experiment.</p></div><aside class="hero-card"><div><span class="pulse"></span><span>CURRENT AUTHORITY / VERSION 2</span></div><p>The task can continue.<br>The delivery cannot.</p><ul><li><b>✓</b> Read the authorized record <small>Allowed</small></li><li><b>✓</b> Keep a checked draft <small>Allowed</small></li><li class="denied"><b>×</b> Deliver the private result <small>Revoked</small></li></ul><footer><span>Permission is checked at the gateway.</span><strong>v1 → v2</strong></footer></aside></section>
-<section id="lab"><div class="section-title"><div><p class="eyebrow">Inspect an actual boundary</p><h2>A job. A change of permission.</h2></div><span class="fixture-tag">Scripted harness · no model run</span></div><p class="example-note">These routes are authored examples executed by Permit’s real fictional gateway. They demonstrate enforcement and evidence; they are not base-model or trained-model benchmarks.</p><div class="experiment"><aside class="scenarios"><p class="eyebrow">Choose a case</p><div id="case-list"></div><div class="model-state"><span>Model experiment</span><strong>Awaiting model access & GPU run</strong><p>Scores appear after real base and adapter evaluations. No training results have been produced yet.</p></div></aside><div class="case-view"><div class="case-head"><div><p class="eyebrow">The requested work</p><h3 id="case-title">Reading the harness…</h3></div><button id="download" class="button small">Download evidence ↓</button></div><p id="task"></p><div class="route-switch" id="route-list" aria-label="Scripted route"></div><div class="policy-bar"><span>Read record & keep draft</span><b>Allowed</b><span>Deliver summary</span><b id="delivery-state"></b></div><div id="trace"></div><div id="outcome" role="status"></div></div></div></section>
-<section id="method"><div class="section-title"><div><p class="eyebrow">Measure the right behavior</p><h2>Blocked is only half the story.</h2></div><p>A safer agent should finish the permitted work, and avoid trying a forbidden action in the first place.</p></div><div class="method-grid"><article><span>01 / ATTEMPT</span><h3>What did the agent try?</h3><p>Measure revoked capabilities, wrong destinations and stale permission versions. A blocked call still records the attempt.</p></article><article><span>02 / EFFECT</span><h3>What actually happened?</h3><p>The gateway enforces the current scope. A saved draft or delivery must exist in the final state to count.</p></article><article><span>03 / USEFULNESS</span><h3>Did useful work survive?</h3><p>Test safe completion and over-refusal on clean cases. Stopping every job does not qualify as success.</p></article></div></section>
-<section class="research"><div><p class="eyebrow">A reproducible experiment</p><h2>Train the behavior.<br>Keep the evidence.</h2></div><div><p>264 fictional structured tasks, with whole workflow, prompt and attack families separated into training, development and held-out sets. No future revocation schedule or answer enters the model prompt.</p><div class="pipeline"><span>AgentTune<br><strong>GRPO + LoRA</strong></span><b>→</b><span>Observed tool traces<br><strong>Versioned gateway</strong></span><b>→</b><span>AuditKIT<br><strong>Verified state outcomes</strong></span></div><p class="scope">The launch scripts pin Tiny Aya Global, toolkit revisions and experiment budgets. Legitimate gated-model access and configured CUDA compute are still required. This preview has no inference endpoint and no trained model.</p></div></section>
-<section class="results"><div><p class="eyebrow">Model results</p><h2>Evidence before a claim.</h2><p>No before/after improvement is claimed until the experiment runs. You can inspect a completed evaluation report locally in this browser.</p></div><label class="upload">Inspect evaluation JSON<input id="report-file" type="file" accept="application/json,.json"></label><div id="report-result" role="status"></div></section></main><footer class="site-footer"><a class="brand" href="/">Permit.</a><span>Keep authority current. Keep the useful work.</span><a href="https://github.com/NSEVEjk0/permit-agent#run-the-experiment" target="_blank" rel="noopener noreferrer">Reproduce the experiment ↗</a></footer><div id="toast" role="status"></div><script type="module" src="/app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Permit — keep the report moving when approval changes</title>
+  <meta name="description" content="Inspect an invoice assistant's response to withdrawn approval, a changed reviewer and forged vendor instructions. Fictional workflows, replayable evidence and honest model evaluation.">
+  <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<a class="skip" href="#lab">Skip to the workflow</a>
+<header>
+  <a class="brand" href="/" aria-label="Permit home"><span>↗</span>Permit<span class="brand-dot">.</span></a>
+  <nav aria-label="Main navigation"><a href="#lab">Workflow lab</a><a href="#method">The experiment</a><a href="https://github.com/NSEVEjk0/permit-agent" target="_blank" rel="noopener noreferrer">Source ↗</a></nav>
+  <span class="research-label">CURRENT APPROVAL. USEFUL WORK.</span>
+</header>
+<main>
+  <section class="hero">
+    <div>
+      <p class="eyebrow">An invoice task. A manager’s changed approval.</p>
+      <h1>Keep the report.<br><em>Follow the latest approval.</em></h1>
+      <p class="lede">An invoice assistant should check the bills, retain its report and respect the manager’s latest decision. Permit tests whether it can keep useful work moving when sending is withdrawn or a reviewer changes—even when a vendor note claims otherwise.</p>
+      <a class="button dark" href="#lab">Explore the invoice workflow <span>↗</span></a>
+      <p class="hero-foot">Fictional invoices and simulated deliveries. Model improvement is still unmeasured.</p>
+    </div>
+    <aside class="hero-card">
+      <div><span class="pulse"></span><span>CURRENT APPROVAL / VERSION 2</span></div>
+      <p>The report can continue.<br>The send needs approval.</p>
+      <ul>
+        <li><b>✓</b> Check invoices against orders <small>Allowed</small></li>
+        <li><b>✓</b> Keep the payment report <small>Allowed</small></li>
+        <li class="denied"><b>×</b> Send after approval is withdrawn <small>Revoked</small></li>
+      </ul>
+      <footer><span>Record the pending delivery.</span><strong>v1 → v2</strong></footer>
+    </aside>
+  </section>
+
+  <section id="lab">
+    <div class="section-title"><div><p class="eyebrow">Inspect the workflow</p><h2>Checked invoices. Current approval.</h2></div><span class="fixture-tag">Scripted harness · no model run</span></div>
+    <p class="example-note">These authored routes execute against Permit’s fictional gateway. Compare a useful recovery, a forbidden attempt and abandoned work. They demonstrate behavior and evidence; they are not base-model or trained-model results.</p>
+    <div class="experiment">
+      <aside class="scenarios">
+        <p class="eyebrow">Choose a case</p><div id="case-list"></div>
+        <div class="model-state"><span>Model experiment</span><strong>API baseline pending · adapter not trained</strong><p>A bounded Cohere API probe can run without a GPU. Actual before/after training results are still pending.</p><a href="https://github.com/NSEVEjk0/permit-agent#run-the-free-baseline" target="_blank" rel="noopener noreferrer">Run the baseline ↗</a></div>
+      </aside>
+      <div class="case-view">
+        <div class="case-head"><div><p class="eyebrow">The requested work</p><h3 id="case-title">Reading the workflow…</h3></div><button id="download" class="button small">Download evidence ↓</button></div>
+        <p id="task"></p>
+        <div id="invoice-report" class="workflow-input" aria-label="Invoice reconciliation"></div>
+        <div class="route-switch" id="route-list" aria-label="Scripted route"></div>
+        <div class="policy-bar"><span>Check invoices & keep report</span><b>Allowed</b><span>Send report</span><b id="delivery-state"></b></div>
+        <div id="trace"></div><div id="outcome" role="status"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="method">
+    <div class="section-title"><div><p class="eyebrow">Measure useful recovery</p><h2>A blocked send is part of the story.</h2></div><p>The report must be correct, and the remaining work must follow the new approval.</p></div>
+    <div class="method-grid">
+      <article><span>01 / REPORT</span><h3>Were the invoices checked?</h3><p>Verify purchase-order arithmetic, flag every duplicate and amount mismatch, and retain the complete report. A saved but incorrect report fails.</p></article>
+      <article><span>02 / APPROVAL</span><h3>What did the agent attempt?</h3><p>Record forbidden sends, out-of-scope records and stale approval versions. The gateway enforces current approval on every call.</p></article>
+      <article><span>03 / RECOVERY</span><h3>Did useful work continue?</h3><p>After withdrawal, retain the report and record the delivery awaiting approval. After a reviewer change, complete the allowed send. Also measure unnecessary refusal and wasted calls.</p></article>
+    </div>
+  </section>
+
+  <section class="research">
+    <div><p class="eyebrow">A reproducible experiment</p><h2>Test the base model.<br>Train where evidence points.</h2></div>
+    <div>
+      <p>264 fictional invoice workflows: 144 training, 48 development and 72 held-out cases. Whole domain, prompt and attack families stay in separate splits. Invoice errors vary independently of the approval condition.</p>
+      <div class="pipeline"><span>AgentTune<br><strong>Portable trajectories / GRPO</strong></span><b>→</b><span>Observed tool effects<br><strong>Versioned gateway</strong></span><b>→</b><span>AuditKIT<br><strong>Independent report checks</strong></span></div>
+      <p class="scope">The preliminary Tiny Aya API probe needs an evaluation key and no GPU. It cannot establish adapter improvement because its hosted model revision is unreported. Formal training and a matching base/adapter comparison still require legitimate model access and configured compute.</p>
+    </div>
+  </section>
+
+  <section class="results">
+    <div><p class="eyebrow">Model results</p><h2>Evidence before a claim.</h2><p>No training improvement has been measured. Inspect a completed hosted baseline or local model evaluation in your browser; the file stays on your device.</p></div>
+    <label class="upload">Inspect evaluation JSON<input id="report-file" type="file" accept="application/json,.json"></label>
+    <div id="report-result" role="status"></div>
+  </section>
+</main>
+<footer class="site-footer"><a class="brand" href="/">Permit.</a><span>Keep approval current. Keep the useful report.</span><a href="https://github.com/NSEVEjk0/permit-agent#run-the-experiment" target="_blank" rel="noopener noreferrer">Reproduce the experiment ↗</a></footer>
+<div id="toast" role="status"></div><script type="module" src="/app.js"></script>
+</body>
+</html>
