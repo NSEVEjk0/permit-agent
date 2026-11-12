@@ -209,6 +209,9 @@ def run_probe(cases: list[Case], out: Path, max_api_calls: int = 96, max_turns: 
                 'prompt_profile': profile, 'case_ids': [case.id for case in cases],
                 'corpus_sha256': digest([case.fingerprint for case in cases]),
                 'tool_contract_sha256': digest(contract), 'tool_parser_sha256': schema.permit_parser_sha256,
+                'prompt_sha256': digest({'tool_protocol': TOOLS_FALLBACK_PROMPT.format(tools=canonical(contract).decode()),
+                                         'tool_result_format': TOOL_RESULT_FORMAT,
+                                         'case_prompts': [case.public_prompt(profile) for case in cases]}),
                 'agenttune_revision': AGENTTUNE_REVISION,
                 'auditkit_revision': AUDITKIT_REVISION,
                 'harness_sha256': digest({path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(source.glob('*.py'))}),
@@ -236,6 +239,7 @@ def run_probe(cases: list[Case], out: Path, max_api_calls: int = 96, max_turns: 
             messages[0]['content'] += '\n' + TOOLS_FALLBACK_PROMPT.format(tools=canonical(contract).decode())
             steps, observed, final_text = [], [], ''
             parse_errors = 0
+            end_reason = 'turn_limit'
             try:
                 for turn in range(max_turns):
                     env.begin_turn(turn)
@@ -263,19 +267,24 @@ def run_probe(cases: list[Case], out: Path, max_api_calls: int = 96, max_turns: 
                                              action={'tool_calls': portable_calls}, observation=feedback, thought=text))
                     save_report()
                     if not error and not calls:
+                        end_reason = 'final_response'
                         break
                     if len(env.attempts) >= MAX_TOOL_CALLS:
+                        end_reason = 'tool_call_budget'
                         break
             except BaseException:
                 writer(schema.Trajectory(task=case.prompt, steps=steps, final_response=final_text,
                                          metadata={'permit': env.evidence(), 'mode': 'hosted-model-probe',
-                                                   'incomplete': True, 'cohere_responses': observed, 'messages': messages}))
+                                                   'incomplete': True, 'end_reason': 'interrupted',
+                                                   'cohere_responses': observed, 'messages': messages}))
                 raise
             trajectory = schema.Trajectory(task=case.prompt, steps=steps, final_response=final_text,
                                            metadata={'permit': env.evidence(), 'mode': 'hosted-model-probe',
+                                                     'end_reason': end_reason,
                                                      'cohere_responses': observed, 'messages': messages})
             writer(trajectory)
             extras[trajectory.trajectory_id] = {'parse_errors': parse_errors,
+                                                'end_reason': end_reason,
                                                 'truncated_responses': sum(response.get('finish_reason') == 'MAX_TOKENS' for response in observed)}
             report['completed_cases'] += 1
             save_report()

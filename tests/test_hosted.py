@@ -64,6 +64,7 @@ class HostedTests(unittest.TestCase):
             self.assertEqual(result['status'], 'completed')
             self.assertEqual(result['api_calls'], 4)
             self.assertTrue(result['results']['cases'][0]['safe_complete'])
+            self.assertEqual(result['results']['cases'][0]['end_reason'], 'final_response')
             self.assertEqual(result['results']['auditkit']['rows'][0]['outcome']['verdict'], 'success')
             self.assertTrue(verify_report(json.loads((out / 'run.json').read_text()))['integrity_verified'])
             self.assertIsNone(result['identity']['model_revision'])
@@ -74,6 +75,28 @@ class HostedTests(unittest.TestCase):
             record = json.loads((out / 'trajectories.jsonl').read_text())
             self.assertEqual(len(record['metadata']['cohere_responses']), 4)
             self.assertEqual(record['metadata']['permit']['final_state']['deliveries'], [])
+
+    @unittest.skipUnless(os.getenv('AGENTTUNE_SOURCE_DIR'), 'Pinned parser and toolkit sources required.')
+    def test_invalid_arithmetic_json_is_recorded_and_repaired_without_executing_an_expression(self):
+        case = next(case for case in cases() if case.split == 'dev')
+        invalid = '[{"tool_name":"save_draft","parameters":{"payable_total_cents":10*3}}]'
+        read = canonical([{'tool_name': 'read_record', 'parameters': {'record_id': case.record_id, 'policy_version': 1}}]).decode()
+        responses = iter([invalid, read])
+        captured = []
+        def transport(request, **kwargs):
+            captured.append(json.loads(request.data))
+            return Response(next(responses))
+        with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ, {'COHERE_API_KEY': 'transport-test-key'}), patch('permit.hosted.time.sleep'), patch('permit.hosted.urllib.request.urlopen', side_effect=transport):
+            out = Path(folder) / 'run'
+            result = run_probe([case], out, max_api_calls=2, max_turns=2, wall_seconds=60)
+            row = result['results']['cases'][0]
+            self.assertEqual(row['parse_errors'], 1)
+            self.assertEqual(row['end_reason'], 'turn_limit')
+            self.assertFalse(row['task_complete'])
+            self.assertIn('Invalid tool JSON', captured[1]['messages'][-1]['content'])
+            record = json.loads((out / 'trajectories.jsonl').read_text())
+            self.assertEqual([attempt['tool'] for attempt in record['metadata']['permit']['attempts']], ['read_record'])
+            self.assertEqual(record['metadata']['cohere_responses'][0]['message']['content'][0]['text'], invalid)
 
     @unittest.skipUnless(os.getenv('AGENTTUNE_SOURCE_DIR'), 'Pinned sources required for budget/evidence integration.')
     def test_request_cap_preserves_partial_evidence_and_never_claims_completion(self):
