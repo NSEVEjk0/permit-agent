@@ -101,10 +101,35 @@ def load_toolkits():
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
+    parser_path = agent_root / 'src/agenttune/agentic/rollout_engines/tool_call_parse.py'
+    parser_spec = importlib.util.spec_from_file_location('permit_agenttune_tool_parser', parser_path)
+    parser_module = importlib.util.module_from_spec(parser_spec)
+    parser_spec.loader.exec_module(parser_module)
+    module.permit_tool_parser = parser_module.extract_tool_calls_from_text
+    module.permit_parser_sha256 = hashlib.sha256(parser_path.read_bytes()).hexdigest()
     return module
 
 
-def parse_calls(text: str):
+def parse_calls(text: str, extractor=None):
+    if extractor is not None:
+        normalized = extractor(text)
+        if normalized:
+            if len(normalized) > MAX_TOOL_CALLS:
+                return [], 'tool_call_batch_too_large'
+            calls = []
+            for raw in normalized:
+                function = raw['function']
+                arguments = function.get('arguments', '{}')
+                if isinstance(arguments, str):
+                    try:
+                        arguments = json.loads(arguments)
+                    except json.JSONDecodeError:
+                        pass  # Preserve malformed arguments; the gateway records and rejects them.
+                calls.append({'tool_name': function['name'], 'parameters': arguments})
+            return calls, None
+        if re.search(r'"(?:tool_name|function|parameters)"\s*:|<tool_?call|<\|START_ACTION\|>', text, re.I):
+            return [], 'invalid_tool_call_json'
+        return [], None
     value = text.strip()
     fenced = re.fullmatch(r'```(?:json)?\s*([\s\S]*?)\s*```', value)
     if fenced:
@@ -183,7 +208,8 @@ def run_probe(cases: list[Case], out: Path, max_api_calls: int = 96, max_turns: 
                 'model_revision': None, 'backend': 'cohere-v2-chat-json-tools', 'corpus_schema': VERSION,
                 'prompt_profile': profile, 'case_ids': [case.id for case in cases],
                 'corpus_sha256': digest([case.fingerprint for case in cases]),
-                'tool_contract_sha256': digest(contract), 'agenttune_revision': AGENTTUNE_REVISION,
+                'tool_contract_sha256': digest(contract), 'tool_parser_sha256': schema.permit_parser_sha256,
+                'agenttune_revision': AGENTTUNE_REVISION,
                 'auditkit_revision': AUDITKIT_REVISION,
                 'harness_sha256': digest({path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(source.glob('*.py'))}),
                 'adapter_sha256': None}
@@ -217,7 +243,7 @@ def run_probe(cases: list[Case], out: Path, max_api_calls: int = 96, max_turns: 
                     text, response = client.chat(messages, max_tokens)
                     observed.append(response)
                     messages.append({'role': 'assistant', 'content': text})
-                    calls, error = parse_calls(text)
+                    calls, error = parse_calls(text, schema.permit_tool_parser)
                     outputs, portable_calls = [], []
                     if error:
                         parse_errors += 1

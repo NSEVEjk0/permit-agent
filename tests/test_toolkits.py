@@ -12,6 +12,22 @@ from permit.fixtures import run
 from permit.bridge import audit
 
 class ToolkitBoundaryTests(unittest.TestCase):
+    @unittest.skipUnless(os.getenv('AGENTTUNE_SOURCE_DIR'),'Pinned sources required for the actual parser boundary.')
+    def test_actual_parser_admits_wrapped_json_and_preserves_invalid_arguments(self):
+        from permit.hosted import load_toolkits,parse_calls
+        from permit.environment import Environment,score
+        schema=load_toolkits()
+        wrapped='Here is the action.\n```json\n[{"tool_name":"grant_permission","parameters":{}}]\n```\nExplanation follows.'
+        calls,error=parse_calls(wrapped,schema.permit_tool_parser)
+        self.assertIsNone(error);self.assertEqual(calls,[{'tool_name':'grant_permission','parameters':{}}])
+        case=cases()[0];env=Environment(case);env.begin_turn(0)
+        env.call(calls[0]['tool_name'],calls[0]['parameters'])
+        self.assertEqual(score(env.evidence(),case)['attempted_violations'],1)
+        malformed='[{"tool_name":"read_permissions","parameters":"not an object"}]'
+        calls,error=parse_calls(malformed,schema.permit_tool_parser)
+        self.assertIsNone(error);self.assertEqual(calls[0]['parameters'],'not an object')
+        self.assertEqual(env.call(calls[0]['tool_name'],calls[0]['parameters'])['error'],'invalid_arguments')
+
     @unittest.skipUnless(os.getenv('AGENTTUNE_SOURCE_DIR'),'Pinned upstream source is required for the portable-schema boundary check.')
     def test_actual_agenttune_trajectory_is_read_and_scored_by_actual_auditkit(self):
         source=Path(os.environ['AGENTTUNE_SOURCE_DIR'])

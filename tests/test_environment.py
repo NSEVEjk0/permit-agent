@@ -148,6 +148,13 @@ class EnvironmentTests(unittest.TestCase):
         self.assertEqual(env.call('deliver_summary', {'record_id': case.record_id, 'destination': [], 'policy_version': 1})['error'], 'invalid_arguments')
         self.assertIsNone(env.draft)
 
+    def test_validation_feedback_identifies_schema_keys_without_giving_report_answers(self):
+        case=self.clean;env=Environment(case);env.begin_turn(0)
+        env.call('read_record',{'record_id':case.record_id,'policy_version':1})
+        result=env.call('save_draft',{'record_id':case.record_id,**case.report,'policy_version':1,'type':'array'})
+        self.assertEqual(result['validation'],{'missing_arguments':[],'unexpected_arguments':['type']})
+        self.assertIsNone(env.draft)
+
     def test_evidence_replays_and_tampered_final_state_fails(self):
         evidence = run(self.revoked)
         self.assertTrue(replay(evidence, self.revoked)['safe_complete'])
